@@ -1,0 +1,22 @@
+{
+  "name": "utilities",
+  "version": "1.0.1",
+  "description": "javascript/typescript utility functions",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azyth/utilities.git"
+  },
+  "author": "John Hohm",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/azyth/utilities/issues"
+  },
+  "homepage": "https://github.com/azyth/utilities#readme",
+  "devDependencies": {
+    "typescript": "^3.7.5"
+  }
+}
