@@ -54,20 +54,12 @@ exports.checkNULL = function (obj, objPath, altValue) {
     if (!objPath) {
         return obj;
     } // if no path return the object.
-    var pathArgs = objPath.split('.');
+    var pathArgs = objPath.split(/\.|\[|\]/);
+    pathArgs = pathArgs.filter(exports.isValue);
     var opObj = obj;
     pathArgs.forEach(function (arg) {
         if (!opObj) {
             return;
-        }
-        var arrayValue = arg.split(/\[|\]/);
-        if (arrayValue.length > 1) {
-            // iterate into the array
-            opObj = opObj[arrayValue[0]]; // set the array as object
-            if (!opObj) {
-                return;
-            }
-            arg = arrayValue[1]; // set index value for array
         }
         opObj = opObj[arg];
     });
@@ -75,32 +67,61 @@ exports.checkNULL = function (obj, objPath, altValue) {
         return altValue;
     } // if you have nulled out return alternate
     return opObj;
+    // if (!obj) {
+    //   return altValue;
+    // } // if nothing to operate on return the alternate
+    // if (!objPath) {
+    //   return obj;
+    // } // if no path return the object.
+    // const pathArgs = objPath.split('.');
+    // let opObj = obj;
+    // pathArgs.forEach(arg => {
+    //   if (!opObj) {
+    //     return;
+    //   }
+    //   const arrayValue = arg.split(/\[|\]/);
+    //   if (arrayValue.length > 1) {
+    //     // iterate into the array
+    //     opObj = opObj[arrayValue[0]]; // set the array as object
+    //     if (!opObj) {
+    //       return;
+    //     }
+    //     arg = arrayValue[1]; // set index value for array
+    //   }
+    //   opObj = opObj[arg];
+    // });
+    // if (!opObj) {
+    //   return altValue;
+    // } // if you have nulled out return alternate
+    // return opObj;
 };
 /*
   obj: OBJECT to operate on, exmp: {a: "hi", b: {x: "hello again", y: [{z:4}]}}
   path: STRING designating path to nested object destination, exmp: "b.y[0].z"
   value: value to set at path destination
- */
-// export const setDeep = (obj, path, value) => {
-//     return this.setNestedField(obj, this.pathToArray(path), value);
-//   }
+  */
+exports.setDeep = function (obj, path, value) {
+    return exports.setNestedField(obj, exports.pathToArray(path), value);
+};
 /*
   @PATH must be an array
- */
-// export const setNestedField = (obj, pathArray, value) => {
-//     // need to check if next level exists in obj, if not create it, i.e. Additional fields
-//     if (pathArray.length === 1) {
-//       obj[pathArray] = value;
-//       return;
-//     } else if (!obj[pathArray[0]]
-//                 && pathArray.length > 1
-//                 && !isNaN(Number(pathArray[1]))) {
-//       obj[pathArray[0]] = [{}];
-//     } else if (!obj[pathArray[0]]) {
-//       obj[pathArray[0]] = {};
-//     }
-//     return setNestedField(obj[pathArray[0]], pathArray.slice(1), value);
-//   }
+  */
+exports.setNestedField = function (obj, pathArray, value) {
+    // need to check if next level exists in obj, if not create it, i.e. Additional fields
+    if (pathArray.length === 1) {
+        obj[pathArray[0]] = value;
+        return;
+    }
+    else if (!obj[pathArray[0]]
+        && pathArray.length > 1
+        && !isNaN(Number(pathArray[1]))) {
+        obj[pathArray[0]] = [{}];
+    }
+    else if (!obj[pathArray[0]]) {
+        obj[pathArray[0]] = {};
+    }
+    return exports.setNestedField(obj[pathArray[0]], pathArray.slice(1), value);
+};
 exports.pathToArray = function (path) {
     var pathArray = path.split('.');
     pathArray.forEach(function (elem, ind) {
@@ -113,25 +134,27 @@ exports.pathToArray = function (path) {
     console.log(pathArray);
     return pathArray;
 };
-// export const capitalize = (obj) => {
-//     if (typeof obj !== 'object') {
-//       return obj;
-//     }
-//     const newObj: any = {};
-//     Object.keys(obj).forEach((name) => {
-//       const newname = name.charAt(0).toUpperCase() + name.slice(1);
-//       if (Array.isArray(obj[name])) {
-//         newObj[newname] = [];
-//         const self = this;
-//         obj[name].forEach((s) => { newObj[newname].push(self.capitalize(s)); });
-//       } else if (typeof obj[name] === 'object') {
-//         newObj[newname] = this.capitalize(obj[name]);
-//       } else {
-//         newObj[newname] = obj[name];
-//       }
-//     });
-//     return newObj;
-//   }
+exports.capitalize = function (obj) {
+    if (typeof obj !== 'object') {
+        return obj;
+    }
+    var newObj = {};
+    Object.keys(obj).forEach(function (name) {
+        var newname = name.charAt(0).toUpperCase() + name.slice(1);
+        if (Array.isArray(obj[name])) {
+            newObj[newname] = [];
+            // const self = this;
+            obj[name].forEach(function (s) { newObj[newname].push(exports.capitalize(s)); });
+        }
+        else if (typeof obj[name] === 'object') {
+            newObj[newname] = exports.capitalize(obj[name]);
+        }
+        else {
+            newObj[newname] = obj[name];
+        }
+    });
+    return newObj;
+};
 // checks to see if a value is 'real' data.
 // returns true if not NULL or undefined or ''. WILL return true for 0
 exports.isValue = function (data) {
