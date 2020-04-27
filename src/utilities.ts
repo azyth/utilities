@@ -97,22 +97,43 @@ export const checkNULL = (obj: any, objPath: string, altValue: any) => {
 
 
 /*
+  Sets a value at the destination provided within the object. this function operates on the object by reference.
+
   obj: OBJECT to operate on, exmp: {a: "hi", b: {x: "hello again", y: [{z:4}]}}
   path: STRING designating path to nested object destination, exmp: "b.y[0].z"
   value: value to set at path destination
+
+  RETURNS: void after it has inserted on object by reference
   */
 export const setDeep = (obj: any, path: string, value: any) => {
-  return setNestedField(obj, pathToArray(path), value);
+  setNestedField(obj, pathToArray(path), value);
+  return;
 }
 
 /*
+  Sets a value at the destination provided within the object. the origional object is NOT modified.
+
+  obj: OBJECT to operate on, exmp: {a: "hi", b: {x: "hello again", y: [{z:4}]}}
+  path: STRING designating path to nested object destination, exmp: "b.y[0].z"
+  value: value to set at path destination
+
+  RETURNS: a copy of the object passed in with value inserted
+*/
+export const setDeepCopy = (obj: any, path: string, value: any) => {
+  let copy = recursiveCopyObject(obj);
+  return setNestedField(copy, pathToArray(path), value);
+}
+
+/*
+  This function operates the same as setDeep but just requires the path to be an array of seperate values.
   @PATH must be an array
+  RETURNS: this inserts on the passed in obj then returns the updated object
   */
 export const setNestedField = (obj: any, pathArray: string[], value: any): any => {
   // need to check if next level exists in obj, if not create it, i.e. Additional fields
   if (pathArray.length === 1) {
     obj[pathArray[0]] = value;
-    return;
+    return obj;
   } else if (!obj[pathArray[0]]
               && pathArray.length > 1
               && !isNaN(Number(pathArray[1]))) {
@@ -137,6 +158,7 @@ export const pathToArray = (path: string) => {
 
 }
 
+// iterates through an object and capitalizes all the keys.
 export const capitalize = (obj: any) => {
   if (typeof obj !== 'object') {
     return obj;
@@ -156,9 +178,29 @@ export const capitalize = (obj: any) => {
   });
   return newObj;
 }
+export const changeKey = (obj: any, fn: (key: string) => string) => {
+  if (typeof obj !== 'object') {
+    return obj;
+  }
+  const newObj: any = {};
+  Object.keys(obj).forEach((name) => {
+    const newname = fn(name);
+    if (Array.isArray(obj[name])) {
+      newObj[newname] = [];
+      // const self = this;
+      obj[name].forEach((s: any) => { newObj[newname].push(changeKey(s, fn)); });
+    } else if (typeof obj[name] === 'object') {
+      newObj[newname] = changeKey(obj[name], fn);
+    } else {
+      newObj[newname] = obj[name];
+    }
+  });
+  return newObj;
+}
 
   // checks to see if a value is 'real' data.
-  // returns true if not NULL or undefined or ''. WILL return true for 0
+  // returns false if not NULL or undefined or ''.
+  // returns true if 0 or any other truthy value.
 export const isValue = (data:any) => {
     if (typeof data === 'number') {
         return true;

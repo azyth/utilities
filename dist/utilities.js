@@ -96,21 +96,41 @@ exports.checkNULL = function (obj, objPath, altValue) {
     // return opObj;
 };
 /*
+  Sets a value at the destination provided within the object. this function operates on the object by reference.
+
   obj: OBJECT to operate on, exmp: {a: "hi", b: {x: "hello again", y: [{z:4}]}}
   path: STRING designating path to nested object destination, exmp: "b.y[0].z"
   value: value to set at path destination
+
+  RETURNS: void after it has inserted on object by reference
   */
 exports.setDeep = function (obj, path, value) {
-    return exports.setNestedField(obj, exports.pathToArray(path), value);
+    exports.setNestedField(obj, exports.pathToArray(path), value);
+    return;
 };
 /*
+  Sets a value at the destination provided within the object. the origional object is NOT modified.
+
+  obj: OBJECT to operate on, exmp: {a: "hi", b: {x: "hello again", y: [{z:4}]}}
+  path: STRING designating path to nested object destination, exmp: "b.y[0].z"
+  value: value to set at path destination
+
+  RETURNS: a copy of the object passed in with value inserted
+*/
+exports.setDeepCopy = function (obj, path, value) {
+    var copy = exports.recursiveCopyObject(obj);
+    return exports.setNestedField(copy, exports.pathToArray(path), value);
+};
+/*
+  This function operates the same as setDeep but just requires the path to be an array of seperate values.
   @PATH must be an array
+  RETURNS: this inserts on the passed in obj then returns the updated object
   */
 exports.setNestedField = function (obj, pathArray, value) {
     // need to check if next level exists in obj, if not create it, i.e. Additional fields
     if (pathArray.length === 1) {
         obj[pathArray[0]] = value;
-        return;
+        return obj;
     }
     else if (!obj[pathArray[0]]
         && pathArray.length > 1
@@ -134,6 +154,7 @@ exports.pathToArray = function (path) {
     console.log(pathArray);
     return pathArray;
 };
+// iterates through an object and capitalizes all the keys.
 exports.capitalize = function (obj) {
     if (typeof obj !== 'object') {
         return obj;
@@ -155,8 +176,30 @@ exports.capitalize = function (obj) {
     });
     return newObj;
 };
+exports.changeKey = function (obj, fn) {
+    if (typeof obj !== 'object') {
+        return obj;
+    }
+    var newObj = {};
+    Object.keys(obj).forEach(function (name) {
+        var newname = fn(name);
+        if (Array.isArray(obj[name])) {
+            newObj[newname] = [];
+            // const self = this;
+            obj[name].forEach(function (s) { newObj[newname].push(exports.changeKey(s, fn)); });
+        }
+        else if (typeof obj[name] === 'object') {
+            newObj[newname] = exports.changeKey(obj[name], fn);
+        }
+        else {
+            newObj[newname] = obj[name];
+        }
+    });
+    return newObj;
+};
 // checks to see if a value is 'real' data.
-// returns true if not NULL or undefined or ''. WILL return true for 0
+// returns false if not NULL or undefined or ''.
+// returns true if 0 or any other truthy value.
 exports.isValue = function (data) {
     if (typeof data === 'number') {
         return true;
